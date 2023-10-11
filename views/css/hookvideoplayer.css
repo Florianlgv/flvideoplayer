@@ -1,0 +1,38 @@
+img#zoom-enlightvp{
+    transition: transform 0.3s, filter 0.3s;
+}
+img#zoom-enlightvp:hover {
+    transform: scale(1.05);
+    filter: brightness(110%);
+}
+
+a#link-imagevp{
+    overflow: hidden;
+    display: inline-block; 
+    border: 1px solid rgb(83, 95, 125);
+}
+
+.text-centervp{
+    text-align: center;
+}
+.right-imagevp {
+    max-height: 180px;
+}
+
+#right-image-centeredvp {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (min-width: 768px) and (max-width: 1200px) {
+    .custom-flex-containervp {
+        display: flex;
+        align-items: center;
+    }
+}
+
+.goellissfont{
+    background-color: rgb(255, 21, 0);
+    color: aqua;
+}
