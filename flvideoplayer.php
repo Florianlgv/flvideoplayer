@@ -16,9 +16,6 @@ class FlVideoPlayer extends Module
 
         parent::__construct();
 
-        if (!Configuration::get('VIDEOPLAYER_NAME')) {
-            $this->warning = $this->l('No name provided.');
-        }
     }
     public function install()
     {
@@ -39,6 +36,7 @@ class FlVideoPlayer extends Module
 
         foreach ($languageIds as $langId) {
             Configuration::deleteByName('VIDEOPLAYER_URL_' . $langId);
+            Configuration::deleteByName('VIDEOPLAYER_PREVFILENAME_' . $langId);
         }
 
         $path = _PS_MODULE_DIR_.'videoplayer/videos/';
@@ -79,8 +77,19 @@ class FlVideoPlayer extends Module
         }
     }
 
+    public function isThereSpecialChar($filename){
+        return !preg_match('/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/', $filename);
+    }
+
+    public function isFileNameTooLong($filename, $max_length=200){
+        return strlen($filename) > $max_length;
+    }
+
     public function isNotMP4($file_ext){
         return !in_array($file_ext, ["mp4"]);
+    }
+    public function isFileTooBig($file_size, $max_file_size=200000000){ //200MB
+        return $file_size > $max_file_size;
     }
 
     public function isVideoFileNotDefined($file){
@@ -107,12 +116,15 @@ class FlVideoPlayer extends Module
             
             if ($this->isVideoFileNotDefined($_FILES['VIDEOPLAYER_FILE'])) {
                 $output .= $this->displayError($this->l('An error occurred while trying to upload the file.'));
+            } elseif ($this->isThereSpecialChar($_FILES["VIDEOPLAYER_FILE"]["name"])) {
+                $output .= $this->displayError($this->l('Invalid file name. Only alphanumeric characters, dashes, and underscores are allowed.'));
+            } elseif ($this->isFileNameTooLong($_FILES["VIDEOPLAYER_FILE"]["name"])) {
+                $output .= $this->displayError($this->l('File name is too long. Please use a shorter name.'));
             } else {
-                $max_file_size = 200000000; // 100MB
                 $file_ext = pathinfo($_FILES["VIDEOPLAYER_FILE"]["name"], PATHINFO_EXTENSION);
                 if ($this->isNotMP4($file_ext)) {
                     $output .= $this->displayError($this->l('Invalid file type. Only mp4 files are allowed.'));
-                } elseif ($_FILES["VIDEOPLAYER_FILE"]["size"] > $max_file_size) {
+                } elseif ($this->isFileTooBig($_FILES["VIDEOPLAYER_FILE"]["size"])) {
                     $output .= $this->displayError($this->l('File size is too big. Maximum allowed size is 200MB.'));
                 } else {
                     $path = _PS_MODULE_DIR_ . 'flvideoplayer/videos/';
@@ -125,10 +137,11 @@ class FlVideoPlayer extends Module
                     $targetFilePath = _PS_MODULE_DIR_ . 'flvideoplayer/videos/' . $file_name;
 
                     $this->deletePreviousVideo($targetFilePath);
-
+                    
                     if (move_uploaded_file($_FILES["VIDEOPLAYER_FILE"]["tmp_name"], $path . $file_name)) {
                         $output .= $this->displayConfirmation($this->l('File successfully uploaded.'));
                         Configuration::updateValue('VIDEOPLAYER_URL_'.$selectedLang, $path_url . $file_name);
+                        Configuration::updateValue('VIDEOPLAYER_PREVFILENAME_'.$selectedLang, $_FILES["VIDEOPLAYER_FILE"]["name"]);
                     } else {
                         $output .= $this->displayError($this->l('An error occurred while trying to move the file to its final destination.'));
                     }
@@ -136,10 +149,23 @@ class FlVideoPlayer extends Module
             }
         }
 
-        return $output.$this->displayForm();
+        $output .= $this->displayForm();
+        $this->updateVideoTab();
+        $output .= $this->display(__FILE__, 'views/templates/admin/configuration.tpl');
+        return $output;
     }
 
-
+    public function updateVideoTab(){
+        $languages = Language::getLanguages(true);
+        $videoFileNames = [];
+        foreach ($languages as $lang) {
+            $prevFileName = Configuration::get('VIDEOPLAYER_PREVFILENAME_'.$lang['iso_code']) ?? 'No video has been found';
+            $videoFileNames['videoFileName_'.$lang['iso_code']] = $prevFileName;
+        }
+        $languages = Language::getLanguages(true);
+        $this->context->smarty->assign('languages', $languages);
+        $this->context->smarty->assign($videoFileNames);
+    }
 
     public function displayForm()
     {
@@ -148,7 +174,7 @@ class FlVideoPlayer extends Module
         $languageOptions = [];
         foreach ($languages as $lang) {
             $languageOptions[] = [
-                'id' => $lang['id_lang'],
+                'id' => $lang['iso_code'],
                 'name' => $lang['name']
             ];
         }
@@ -219,6 +245,8 @@ class FlVideoPlayer extends Module
             );
             // Load current value
         $helper->fields_value['SELECTED_LANGUAGE'] = Configuration::get('DEFAULT_LANGUAGE');
-        return $helper->generateForm($form);
+
+        $display = $helper->generateForm($form);
+        return $display;
     }
 }
