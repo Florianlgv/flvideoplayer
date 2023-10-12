@@ -1,6 +1,6 @@
 .align-centervp {
     display: flex;
-    align-items: center; /* Centrage vertical */
+    align-items: center;
 }
 @media (max-width: 767px) {
     .align-centervp {

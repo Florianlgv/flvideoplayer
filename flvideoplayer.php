@@ -16,7 +16,7 @@ class FlVideoPlayer extends Module
 
         parent::__construct();
 
-        if (!Configuration::get('VIDEOPLAYERHYGISEAT_NAME')) {
+        if (!Configuration::get('VIDEOPLAYER_NAME')) {
             $this->warning = $this->l('No name provided.');
         }
     }
@@ -31,9 +31,17 @@ class FlVideoPlayer extends Module
 
     public function uninstall() {
 
-        Configuration::deleteByName('VIDEOPLAYER*_URL');
+        $languages = Language::getLanguages(true);
+        $languageIds = array_map(function($lang) {
+            return $lang['id_lang'];
+        }, $languages);
 
-        $path = _PS_MODULE_DIR_.'videoplayerhygiseat/videos/';
+
+        foreach ($languageIds as $langId) {
+            Configuration::deleteByName('VIDEOPLAYER_URL_' . $langId);
+        }
+
+        $path = _PS_MODULE_DIR_.'videoplayer/videos/';
         array_map('unlink', glob("$path/*.*"));
 
         $this->unregisterHook('displayVideoLink');
@@ -43,7 +51,8 @@ class FlVideoPlayer extends Module
     }
     
     public function hookDisplayVideoLink(){
-        $videoplayer_url = Configuration::get('VIDEOPLAYER_URL');
+        $langId = $this->context->language->id;
+        $videoplayer_url = Configuration::get('VIDEOPLAYER_URL_' . $langId);
         if (!empty($videoplayer_url)) {
             $minia_url = $this->_path.'/img/HygiseatMiniaSiteFinale.png';
             $this->context->smarty->assign(
@@ -70,40 +79,56 @@ class FlVideoPlayer extends Module
         }
     }
 
+    public function isNotMP4($file_ext){
+        return !in_array($file_ext, ["mp4"]);
+    }
 
+    public function isVideoFileNotDefined($file){
+        return (!isset($file) || !isset($file['tmp_name']) || !file_exists($file['tmp_name']));
+    }
+
+    public function ensureDirectoryExists($path){
+        if (!file_exists($path)) {
+            mkdir($path, 0755, true);
+        }
+    }
+
+    public function deletePreviousVideo($targetFilePath){
+        if (file_exists($targetFilePath)) {
+            unlink($targetFilePath);
+        }
+    }
 
     public function getContent()
     {
         $output = '';
 
         if (Tools::isSubmit('submit' . $this->name)) {
-
-            if (Configuration::get('VIDEOPLAYER_URL')) {
-                $path = _PS_MODULE_DIR_.'flvideoplayer/videos/';
-                array_map('unlink', glob("$path/*.*"));                
-            }
-
-            if (!isset($_FILES['VIDEOPLAYER_FILE']) || !isset($_FILES['VIDEOPLAYER_FILE']['tmp_name']) || !file_exists($_FILES['VIDEOPLAYER_FILE']['tmp_name'])) {
+            
+            if ($this->isVideoFileNotDefined($_FILES['VIDEOPLAYER_FILE'])) {
                 $output .= $this->displayError($this->l('An error occurred while trying to upload the file.'));
             } else {
-
-                $allowed_exts = array("mp4");
-                $max_file_size = 100000000; // 100MB
+                $max_file_size = 200000000; // 100MB
                 $file_ext = pathinfo($_FILES["VIDEOPLAYER_FILE"]["name"], PATHINFO_EXTENSION);
-                if (!in_array($file_ext, $allowed_exts)) {
+                if ($this->isNotMP4($file_ext)) {
                     $output .= $this->displayError($this->l('Invalid file type. Only mp4 files are allowed.'));
                 } elseif ($_FILES["VIDEOPLAYER_FILE"]["size"] > $max_file_size) {
-                    $output .= $this->displayError($this->l('File size is too big. Maximum allowed size is 100MB.'));
+                    $output .= $this->displayError($this->l('File size is too big. Maximum allowed size is 200MB.'));
                 } else {
                     $path = _PS_MODULE_DIR_ . 'flvideoplayer/videos/';
                     $path_url = _MODULE_DIR_ . 'flvideoplayer/videos/';
-                    if (!file_exists($path)) {
-                        mkdir($path, 0755, true);
-                    }
-                    $file_name = uniqid() . '.' . $file_ext;
+
+                    $this->ensureDirectoryExists($path);
+
+                    $selectedLang = Tools::getValue('SELECTED_LANGUAGE');
+                    $file_name = 'video_HYGISEAT_'. $selectedLang . '.' . $file_ext;
+                    $targetFilePath = _PS_MODULE_DIR_ . 'flvideoplayer/videos/' . $file_name;
+
+                    $this->deletePreviousVideo($targetFilePath);
+
                     if (move_uploaded_file($_FILES["VIDEOPLAYER_FILE"]["tmp_name"], $path . $file_name)) {
                         $output .= $this->displayConfirmation($this->l('File successfully uploaded.'));
-                        Configuration::updateValue('VIDEOPLAYER_URL', $path_url . $file_name);
+                        Configuration::updateValue('VIDEOPLAYER_URL_'.$selectedLang, $path_url . $file_name);
                     } else {
                         $output .= $this->displayError($this->l('An error occurred while trying to move the file to its final destination.'));
                     }
@@ -115,29 +140,18 @@ class FlVideoPlayer extends Module
     }
 
 
+
     public function displayForm()
     {
         $default_lang = (int)Configuration::get('PS_LANG_DEFAULT');
-
-        // $formtest = [
-        //     'form' => [
-        //         'legend' => [
-        //             'title' => $this->l('Edit'),
-        //             'icon' => 'icon-cogs'
-        //         ],
-        //         'input' => [
-        //             [
-        //                 'type' => 'text',
-        //                 'name' => 'example'
-        //             ]
-        //         ],
-        //         'submit' => [
-        //             'title' => $this->l('Save'),
-        //             'class' => 'btn btn-default pull-right'
-        //         ]
-        //     ]
-        // ];
-
+        $languages = Language::getLanguages(true);
+        $languageOptions = [];
+        foreach ($languages as $lang) {
+            $languageOptions[] = [
+                'id' => $lang['id_lang'],
+                'name' => $lang['name']
+            ];
+        }
         $form = [
             [
                 'form'=> [
@@ -145,19 +159,26 @@ class FlVideoPlayer extends Module
                         'title' => $this->l('Settings'),
                         'icon' => 'icon-cogs'
                     ],
-                    'input' => [
+                    'input' => [        
+                        [
+                            'type' => 'select',
+                            'label' => $this->l('Select Language'),
+                            'name' => 'SELECTED_LANGUAGE',
+                            'identifier' => 'id',
+                            'options' => [
+                                'query' => $languageOptions,
+                                'id' => 'id',
+                                'name' => 'name'
+                            ]
+                        ],
                         [
                             'type' => 'file',
-                            'label' => $this->l('Upload a video'),
+                            'label' => $this->l('Upload a mp4 video'),
                             'name' => 'VIDEOPLAYER_FILE',
                             'display_image' => true,
                             'extensions' => 'mp4',
                             'required' => true
-                        ]// , array(
-                        //     'type' => 'text',
-                        //     'label' => 'test',   camarche presque
-                        //     'name' => 'test'
-                        // )
+                        ]
                     ],
                     'submit' => [
                         'title' => $this->l('Save'),
@@ -165,9 +186,6 @@ class FlVideoPlayer extends Module
                     ]
                 ]
             ],
-
-            // $formtest
-
         ];
 
         $helper = new HelperForm();
@@ -184,8 +202,8 @@ class FlVideoPlayer extends Module
 
         // Title and toolbar
         $helper->title = $this->displayName;
-        $helper->show_toolbar = false;        // false -> remove toolbar
-        $helper->toolbar_scroll = true;      // yes - > Toolbar is always visible on the top of the screen.
+        $helper->show_toolbar = true;        
+        $helper->toolbar_scroll = true;      
         $helper->submit_action = 'submit'.$this->name;
         $helper->toolbar_btn = array(
             'save' =>
@@ -200,10 +218,7 @@ class FlVideoPlayer extends Module
             )
             );
             // Load current value
-        $helper->fields_value['VIDEOPLAYER_URL'] = Configuration::get('VIDEOPLAYER_URL');
-        // $helper->fields_value = ['example' => 'testing', ];
-
+        $helper->fields_value['SELECTED_LANGUAGE'] = Configuration::get('DEFAULT_LANGUAGE');
         return $helper->generateForm($form);
-
     }
 }
