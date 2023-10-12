@@ -78,7 +78,7 @@ class FlVideoPlayer extends Module
     }
 
     public function isThereSpecialChar($filename){
-        return !preg_match('/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/', $filename);
+        return !preg_match('/^[a-zA-Z0-9_\- ]+\.[a-zA-Z0-9]+$/', $filename);
     }
 
     public function isFileNameTooLong($filename, $max_length=200){
