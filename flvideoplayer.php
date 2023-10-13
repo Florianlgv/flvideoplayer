@@ -53,7 +53,7 @@ class FlVideoPlayer extends Module
         $langId = $this->context->language->iso_code;
         $videoplayer_url = Configuration::get('VIDEOPLAYER_URL_' . $langId);
         if (!empty($videoplayer_url)) {
-            $minia_url = $this->_path.'/img/HygiseatMiniaSiteFinale.png';
+            $minia_url = $this->_path.'/img/miniature-video-HYGISEAT.png';
             $this->context->smarty->assign(
             array(
                 'videoplayer_url' => $this->context->link->getModuleLink('flvideoplayer', 'videoplayer'),
@@ -73,7 +73,8 @@ class FlVideoPlayer extends Module
 
     public function hookDisplayHeader()
     {
-        if ($this->context->controller->php_self == 'index') {   //$this->context->controller->php_self == 'category' && (int)Tools::getValue('id_category') == 3
+        $this->context->controller->addCSS($this->_path.'views/css/need-update.css', 'all');
+        if ($this->context->controller->php_self == 'category' && (int)Tools::getValue('id_category') == 3) {
             $this->context->controller->addCSS($this->_path.'views/css/hookvideoplayer.css', 'all');
         }
     }

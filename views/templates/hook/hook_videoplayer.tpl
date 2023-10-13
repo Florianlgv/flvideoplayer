@@ -8,8 +8,7 @@
         <div class="col-lg-6 col-md-6 text-centervp">
             <div class="row mb-1 mt-1" id="right-image-centeredvp">
 
-                    <img title="Aspiration des mauvaises odeurs WC" src="{$smarty.const._MODULE_DIR_}flvideoplayer/img/mauvaises-odeurs-WC-aspiration.jpg" class="img-fluid right-imagevp">
-
+                    <img title="Aspiration des mauvaises odeurs WC" src="{$smarty.const._MODULE_DIR_}flvideoplayer/img/mauvaises-odeurs-WC-aspiration.jpg" class="img-responsive right-imagevp">
             </div>
             <h4>{l s="Option aspiration des odeurs sur version suspendue" mod=flvideoplayer}</h4>
             <p>{l s="Système efficace d'aspiration des odeurs directement à la source dans la cuvette pour les évacuer dans la canalisation des eaux usées après le siphon (sans filtre à changer)." mod=flvideoplayer}</p>
