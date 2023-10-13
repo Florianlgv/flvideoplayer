@@ -83,14 +83,14 @@ class FlVideoPlayer extends Module
         return !preg_match('/^[a-zA-Z0-9_\- ]+\.[a-zA-Z0-9]+$/', $filename);
     }
 
-    public function isFileNameTooLong($filename, $max_length=200){
+    public function isFileNameTooLong($filename, $max_length=20){
         return strlen($filename) > $max_length;
     }
 
     public function isNotMP4($file_ext){
         return !in_array($file_ext, ["mp4"]);
     }
-    public function isFileTooBig($file_size, $max_file_size=200000000){ //200MB
+    public function isFileTooBig($file_size, $max_file_size=20000000){ //20MB
         return $file_size > $max_file_size;
     }
 
