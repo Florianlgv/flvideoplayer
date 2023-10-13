@@ -8,7 +8,7 @@
             <h3>{l s="WC automatique suspendu HYGISEAT sans bride pour l'hygiène optimale des sanitaires" mod=flvideoplayer}</h3>
         </div>
         <div class="col-lg-6 col-md-6 col-sm-6" style="display:flex;justify-content:flex-end;">
-            <img title="Aspiration des mauvaises odeurs WC" src="modules\flvideoplayer\img\IconeFabenFrance.png" style="max-width:100px;" class="img-fluid">
+            <img title="Aspiration des mauvaises odeurs WC" src="{$smarty.const._MODULE_DIR_}flvideoplayer\img\IconeFabenFrance.png" style="max-width:100px;" class="img-fluid">
         </div>
     </div>
     <div class="row">

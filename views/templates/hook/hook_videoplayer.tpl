@@ -6,9 +6,9 @@
             </a>         
         </div>
         <div class="col-lg-6 col-md-6 text-centervp">
-            <div class="row mb-2" id="right-image-centeredvp">
+            <div class="row mb-1 mt-1" id="right-image-centeredvp">
 
-                    <img title="Aspiration des mauvaises odeurs WC" src="modules/flvideoplayer/img/mauvaises-odeurs-WC-aspiration.jpg" class="img-fluid right-imagevp">
+                    <img title="Aspiration des mauvaises odeurs WC" src="{$smarty.const._MODULE_DIR_}flvideoplayer/img/mauvaises-odeurs-WC-aspiration.jpg" class="img-fluid right-imagevp">
 
             </div>
             <h4>{l s="Option aspiration des odeurs sur version suspendue" mod=flvideoplayer}</h4>

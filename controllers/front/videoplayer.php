@@ -4,7 +4,7 @@ class flvideoplayerVideoPlayerModuleFrontController extends ModuleFrontControlle
     public function init()
     {
         parent::init();
-        $langId = $this->context->language->id;
+        $langId = $this->context->language->iso_code;
         $videoplayer_url = Configuration::get('VIDEOPLAYER_URL_' . $langId);
         $this->context->smarty->assign('video_url', $videoplayer_url);
     }

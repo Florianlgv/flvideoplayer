@@ -21,7 +21,8 @@ class FlVideoPlayer extends Module
     {
         return parent::install()  &&
             $this->registerHook('displayVideoLink')
-            && $this->registerHook('header');
+            && $this->registerHook('header')
+            && $this->registerHook('moduleRoutes');
     }
 
     
@@ -30,7 +31,7 @@ class FlVideoPlayer extends Module
 
         $languages = Language::getLanguages(true);
         $languageIds = array_map(function($lang) {
-            return $lang['id_lang'];
+            return $lang['iso_code'];
         }, $languages);
 
 
@@ -39,17 +40,17 @@ class FlVideoPlayer extends Module
             Configuration::deleteByName('VIDEOPLAYER_PREVFILENAME_' . $langId);
         }
 
-        $path = _PS_MODULE_DIR_.'videoplayer/videos/';
+        $path = _PS_MODULE_DIR_.'flvideoplayer/videos/';
         array_map('unlink', glob("$path/*.*"));
 
         $this->unregisterHook('displayVideoLink');
         $this->unregisterHook('header');
-
+        $this->unregisterHook('moduleRoutes');
         return parent::uninstall();
     }
-    
+    //url personalisable
     public function hookDisplayVideoLink(){
-        $langId = $this->context->language->id;
+        $langId = $this->context->language->iso_code;
         $videoplayer_url = Configuration::get('VIDEOPLAYER_URL_' . $langId);
         if (!empty($videoplayer_url)) {
             $minia_url = $this->_path.'/img/HygiseatMiniaSiteFinale.png';
@@ -188,7 +189,7 @@ class FlVideoPlayer extends Module
                     'input' => [        
                         [
                             'type' => 'select',
-                            'label' => $this->l('Select Language'),
+                            'label' => $this->l('Language'),
                             'name' => 'SELECTED_LANGUAGE',
                             'identifier' => 'id',
                             'options' => [
